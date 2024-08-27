@@ -1,0 +1,72 @@
+import torch
+from transformers import pipeline
+
+class SentimentAnalysisAgent:
+    def __init__(self, model_name='cardiffnlp/twitter-roberta-base-sentiment'):
+        """
+        Initializes the SentimentAnalysisAgent with a pre-trained model.
+
+        :param model_name: str: The name of the pre-trained model to use (default is 'cardiffnlp/twitter-roberta-base-sentiment')
+        """
+        # Check if a GPU is available and set the device accordingly
+        device = 0 if torch.cuda.is_available() else -1  # 0 for GPU, -1 for CPU
+        self.analyzer = pipeline('sentiment-analysis', model=model_name, device=device)
+
+    def analyze_sentiment(self, texts):
+        """
+        Analyzes the sentiment of the provided list of texts.
+
+        :param texts: list: A list of texts to analyze
+        :return: list: A list of sentiment results corresponding to the input texts
+        """
+        sentiments = []
+        for text in texts:
+            try:
+                result = self.analyzer(text)
+                sentiments.append(result[0])  # Appending only the first result since each text is analyzed independently
+            except Exception as e:
+                print(f"Error analyzing sentiment: {e}")
+                sentiments.append({"label": "ERROR", "score": 0.0})  # Indicating an error in sentiment analysis
+        return sentiments
+
+    def interpret_sentiment(self, sentiment):
+        """
+        Provides a human-readable interpretation of the sentiment result.
+
+        :param sentiment: dict: A sentiment result dictionary containing 'label' and 'score'
+        :return: str: A detailed interpretation of the sentiment
+        """
+        label = sentiment['label']
+        score = sentiment['score']
+
+        if label == 'LABEL_0':
+            interpretation = f"The sentiment is negative with a confidence score of {score:.1%}."
+        elif label == 'LABEL_1':
+            interpretation = f"The sentiment is neutral with a confidence score of {score:.1%}. This suggests that the content is perceived as neither positive nor negative but rather neutral or mixed in tone."
+        elif label == 'LABEL_2':
+            interpretation = f"The sentiment is positive with a confidence score of {score:.1%}."
+        else:
+            interpretation = "The sentiment analysis encountered an error."
+
+        return interpretation
+
+if __name__ == "__main__":
+    # Example test cases with summaries from previous agents
+    test_summaries = [
+        "Major oil producers are meeting next week to discuss possible production adjustments. Recent geopolitical events have led to a sharp increase in prices, with experts predicting further fluctuations in the coming weeks.",
+        "ADNOC has announced a new initiative to boost production efficiency in its offshore rigs. The initiative aims to reduce costs and increase output by leveraging advanced technologies.",
+        "The global energy landscape is changing rapidly, with renewable energy sources becoming more competitive. Oil companies are now investing heavily in cleaner technologies to stay relevant in a carbon-constrained world."
+    ]
+
+    # Instantiate the agent
+    agent = SentimentAnalysisAgent()
+
+    # Analyze sentiments
+    sentiments = agent.analyze_sentiment(test_summaries)
+
+    # Display sentiments with interpretations
+    for i, sentiment in enumerate(sentiments):
+        print(f"Summary {i+1} Sentiment:")
+        print(f"Label: {sentiment['label']}, Score: {sentiment['score']}")
+        print(agent.interpret_sentiment(sentiment))
+        print("\n")
