@@ -1,13 +1,16 @@
+import torch
 from transformers import pipeline
 
 class SummaryGenerationAgent:
     def __init__(self, model_name='facebook/bart-large-cnn'):
         """
-        Initializes the SummaryGenerationAgent with a pre-trained model.
+        Initializes the SummaryGenerationAgent with a pre-trained model and sets it to use GPU if available.
 
         :param model_name: str: The name of the pre-trained model to use (default is 'facebook/bart-large-cnn')
         """
-        self.summarizer = pipeline('summarization', model=model_name)
+        # Check if a GPU is available and set the device accordingly
+        device = 0 if torch.cuda.is_available() else -1  # 0 for GPU, -1 for CPU
+        self.summarizer = pipeline('summarization', model=model_name, device=device)
 
     def summarize_articles(self, articles):
         """
@@ -20,7 +23,18 @@ class SummaryGenerationAgent:
         for article in articles:
             if 'content' in article and article['content']:  # Check if 'content' key exists and is not None
                 try:
-                    summary = self.summarizer(article['content'], max_length=150, min_length=50, do_sample=False)
+                    input_length = len(article['content'].split())  # Calculate the length of the input article
+                    # Dynamically set max_length based on input length
+                    max_length = min(150, input_length // 2)
+                    min_length = min(25, max_length - 5)  # Ensure min_length is always less than max_length
+
+                    # Generate the summary
+                    summary = self.summarizer(
+                        article['content'],
+                        max_length=max_length,
+                        min_length=min_length,
+                        do_sample=False
+                    )
                     summaries.append(summary[0]['summary_text'])
                 except Exception as e:
                     print(f"Error summarizing article: {e}")
@@ -67,3 +81,4 @@ if __name__ == "__main__":
         print(f"Article {i+1} Summary:")
         print(summary)
         print("\n")
+
