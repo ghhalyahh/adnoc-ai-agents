@@ -1,0 +1,65 @@
+import requests
+import json
+
+class NewsCollectionAgent:
+    def __init__(self, api_key, query, language='en', sort_by='relevancy'):
+        """
+        Initializes the NewsCollectionAgent with API credentials and parameters.
+
+        :param api_key: str: Your NewsAPI key
+        :param query: str: Query for fetching news (e.g., "oil market")
+        :param language: str: Language of the news articles (default is English)
+        :param sort_by: str: Sorting order of the news articles (default is relevancy)
+        """
+        self.api_key = api_key
+        self.query = query
+        self.language = language
+        self.sort_by = sort_by
+        self.url = 'https://newsapi.org/v2/everything'
+
+    def fetch_news(self):
+        """
+        Fetches news articles based on the initialized parameters.
+
+        :return: list: A list of articles with relevant details
+        """
+        params = {
+            'q': self.query,
+            'language': self.language,
+            'sortBy': self.sort_by,
+            'apiKey': self.api_key
+        }
+
+        response = requests.get(self.url, params=params)
+
+        if response.status_code == 200:
+            data = response.json()
+            return data['articles']
+        else:
+            print(f"Failed to fetch news: {response.status_code}")
+            return []
+
+    def save_to_file(self, articles, filename='news_articles.json'):
+        """
+        Saves the fetched news articles to a JSON file.
+
+        :param articles: list: List of articles to save
+        :param filename: str: The file name to save the articles (default is 'news_articles.json')
+        """
+        with open(filename, 'w') as file:
+            json.dump(articles, file, indent=4)
+        print(f"Articles saved to {filename}")
+
+if __name__ == "__main__":
+    # Replace 'your_api_key' with your actual NewsAPI key
+    api_key = '56be7e41dc1b4b889ca58c2da6ba156f'  # Insert your API key here)
+    query = 'oil market'
+
+    agent = NewsCollectionAgent(api_key=api_key, query=query)
+    articles = agent.fetch_news()
+
+    if articles:
+        print(f"Fetched {len(articles)} articles.")
+        agent.save_to_file(articles)
+    else:
+        print("No articles were fetched.")
