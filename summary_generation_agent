@@ -1,0 +1,69 @@
+from transformers import pipeline
+
+class SummaryGenerationAgent:
+    def __init__(self, model_name='facebook/bart-large-cnn'):
+        """
+        Initializes the SummaryGenerationAgent with a pre-trained model.
+
+        :param model_name: str: The name of the pre-trained model to use (default is 'facebook/bart-large-cnn')
+        """
+        self.summarizer = pipeline('summarization', model=model_name)
+
+    def summarize_articles(self, articles):
+        """
+        Summarizes the provided list of articles.
+
+        :param articles: list: A list of articles to summarize
+        :return: list: A list of summaries corresponding to the input articles
+        """
+        summaries = []
+        for article in articles:
+            if 'content' in article and article['content']:  # Check if 'content' key exists and is not None
+                try:
+                    summary = self.summarizer(article['content'], max_length=150, min_length=50, do_sample=False)
+                    summaries.append(summary[0]['summary_text'])
+                except Exception as e:
+                    print(f"Error summarizing article: {e}")
+                    summaries.append("Error: Unable to summarize the article.")
+            else:
+                summaries.append("No content available for summarization.")
+        return summaries
+
+if __name__ == "__main__":
+    # Example test cases
+    test_articles = [
+        {
+            "content": (
+                "The oil market is currently facing unprecedented volatility. "
+                "Recent geopolitical events have led to a sharp increase in prices, "
+                "with experts predicting further fluctuations in the coming weeks. "
+                "Major oil producers are meeting next week to discuss possible production adjustments."
+            )
+        },
+        {
+            "content": (
+                "ADNOC has announced a new initiative to boost production efficiency in its offshore rigs. "
+                "The initiative aims to reduce costs and increase output by leveraging advanced technologies. "
+                "This move is expected to strengthen ADNOC's position in the global oil market."
+            )
+        },
+        {
+            "content": (
+                "The global energy landscape is changing rapidly, with renewable energy sources becoming more competitive. "
+                "Oil companies are now investing heavily in cleaner technologies to stay relevant in a carbon-constrained world."
+            )
+        },
+        # Add more test articles as needed
+    ]
+
+    # Instantiate the agent
+    agent = SummaryGenerationAgent()
+
+    # Generate summaries
+    summaries = agent.summarize_articles(test_articles)
+
+    # Display summaries
+    for i, summary in enumerate(summaries):
+        print(f"Article {i+1} Summary:")
+        print(summary)
+        print("\n")
